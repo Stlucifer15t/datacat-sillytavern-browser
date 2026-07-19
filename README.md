@@ -1,6 +1,6 @@
 # Datacat SillyTavern Browser
 
-Browse Data Cat from SillyTavern.
+Browse datacat from SillyTavern.
 
 ## Install in SillyTavern
 
@@ -19,17 +19,17 @@ Browse Data Cat from SillyTavern.
 
 ## What it does
 
-- Browses Data Cat inside SillyTavern.
+- Browses datacat inside SillyTavern.
 - Imports a selected character through SillyTavern's native PNG import flow.
 - Opens the imported character in a fresh chat at the first message.
 - Works with stock SillyTavern; Datacat Reskin is optional.
 
-Requires SillyTavern 1.18.0 or newer and internet access to Data Cat.
+Requires SillyTavern 1.18.0 or newer and internet access to datacat.
 
 ## Privacy
 
 No SillyTavern chats, API keys, model settings, or request headers are sent to
-Data Cat. Basic anonymous usage signals are used for aggregate extension
+datacat. Basic anonymous usage signals are used for aggregate extension
 traffic counts; they contain no persistent installation or device identifier.
 
 ## Development

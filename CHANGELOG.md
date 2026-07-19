@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Allow user-initiated file downloads from the sandboxed DataCat iframe.
+- Close the Browser, other open SillyTavern popups, and unpinned drawers after
+  opening a character chat so the chat remains visible.
+
 ## 0.1.1
 
 - Refresh release URLs so SillyTavern cannot reuse the earlier `0.1.0`

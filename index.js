@@ -20,8 +20,8 @@ import {
     requireBridgeRequestId,
     requireDatacatCharacterId,
     validateDatacatPngPayload,
-} from './bridge_security.js?v=0.1.1';
-import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.1';
+} from './bridge_security.js?v=0.1.2';
+import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.2';
 
 const DEFAULT_URL = DATACAT_BROWSER_URL;
 const DATACAT_CAT_ICON_URL = new URL('./datacat-cat.gif', import.meta.url).href;
@@ -460,6 +460,33 @@ async function closeDatacatBrowserAfterImport() {
     }
 }
 
+async function closeBlockingSillyTavernPopups() {
+    const openPopups = Array.isArray(Popup.util?.popups)
+        ? [...Popup.util.popups].reverse()
+        : [];
+    for (const popup of openPopups) {
+        if (!popup?.dlg?.hasAttribute('open') || popup.dlg.hasAttribute('closing')) {
+            continue;
+        }
+        try {
+            await popup.completeCancelled();
+        } catch (error) {
+            console.warn('[Datacat Browser] Could not close a blocking SillyTavern popup.', error);
+        }
+    }
+}
+
+function closeBlockingSillyTavernDrawers() {
+    $('.openIcon').not('.drawerPinnedOpen').removeClass('openIcon').addClass('closedIcon');
+    $('.openDrawer').not('.pinnedOpen').removeClass('openDrawer').addClass('closedDrawer');
+}
+
+async function revealSillyTavernChatAfterImport() {
+    await closeDatacatBrowserAfterImport();
+    await closeBlockingSillyTavernPopups();
+    closeBlockingSillyTavernDrawers();
+}
+
 function getChatOpenKey(characterIndex, metadata = {}) {
     const characterId = getDatacatCharacterIdFromMetadata(metadata);
     if (characterId) {
@@ -504,7 +531,7 @@ async function openNewChatForCharacterIndex(characterIndex, metadata = {}) {
     const recentOpen = recentChatOpens.get(chatOpenKey);
     const recentAge = recentOpen ? Date.now() - Number(recentOpen.openedAt || 0) : Infinity;
     if (recentOpen && recentAge <= DATACAT_RECENT_CHAT_OPEN_TTL_MS) {
-        await closeDatacatBrowserAfterImport();
+        await revealSillyTavernChatAfterImport();
         console.info('[Datacat Browser] Suppressed duplicate ST chat open.', {
             characterIndex,
             datacatCharacterId: getDatacatCharacterIdFromMetadata(metadata),
@@ -538,7 +565,7 @@ async function openNewChatForCharacterIndex(characterIndex, metadata = {}) {
             chat: chatName,
         });
         pinDatacatChatToTop(document.getElementById('chat'));
-        await closeDatacatBrowserAfterImport();
+        await revealSillyTavernChatAfterImport();
         return {
             skipped: false,
             chat: chatName,
@@ -730,7 +757,7 @@ function createBrowserShell() {
                 class="datacat-browser-frame"
                 title="Explore"
                 loading="eager"
-                sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+                sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
                 referrerpolicy="no-referrer">
             </iframe>
         </div>

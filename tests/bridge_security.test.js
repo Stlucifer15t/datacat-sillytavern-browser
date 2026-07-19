@@ -132,14 +132,24 @@ test('public package contains no custom direct-import bridge path', () => {
     assert.match(source, /sandbox="[^"]*allow-downloads[^"]*"/);
 });
 
+test('Browser close keeps the iframe connected for stateful reopen', () => {
+    const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+    assert.match(source, /document\.body\.append\(layer\)/);
+    assert.match(source, /layer\.classList\.toggle\(DATACAT_BROWSER_LAYER_VISIBLE_CLASS/);
+    assert.match(source, /layer\.toggleAttribute\('inert', !isVisible\)/);
+    assert.match(source, /function hidePersistentBrowserShell\(\) \{\s*stopDatacatBrowserLayoutSync\(\);\s*setPersistentBrowserShellVisible\(false\);/);
+    assert.doesNotMatch(source, /new Popup\(/);
+    assert.doesNotMatch(source, /persistentBrowserShell[^;]*\.remove\(/);
+});
+
 test('manifest exposes public release metadata', () => {
     const manifest = JSON.parse(fs.readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
     assert.equal(manifest.author, 'Data Cat');
     assert.equal(manifest.display_name, 'Datacat SillyTavern Browser');
-    assert.equal(manifest.version, '0.1.2');
+    assert.equal(manifest.version, '0.1.3');
     assert.equal(manifest.version, DATACAT_BROWSER_VERSION);
-    assert.equal(manifest.js, 'index.js?v=0.1.2');
-    assert.equal(manifest.css, 'style.css?v=0.1.2');
+    assert.equal(manifest.js, 'index.js?v=0.1.3');
+    assert.equal(manifest.css, 'style.css?v=0.1.3');
     assert.equal(manifest.minimum_client_version, '1.18.0');
     assert.deepEqual(manifest.dependencies, []);
     assert.equal('requires' in manifest, false);
@@ -159,6 +169,6 @@ test('manifest exposes public release metadata', () => {
 
 test('release entry point cache-busts internal modules', () => {
     const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.2';/);
-    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.2';/);
+    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.3';/);
+    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.3';/);
 });

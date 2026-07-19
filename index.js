@@ -1,4 +1,4 @@
-import { POPUP_TYPE, Popup } from '../../../popup.js';
+import { Popup } from '../../../popup.js';
 import {
     characters,
     clearChat,
@@ -20,13 +20,11 @@ import {
     requireBridgeRequestId,
     requireDatacatCharacterId,
     validateDatacatPngPayload,
-} from './bridge_security.js?v=0.1.2';
-import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.2';
+} from './bridge_security.js?v=0.1.3';
+import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.3';
 
 const DEFAULT_URL = DATACAT_BROWSER_URL;
 const DATACAT_CAT_ICON_URL = new URL('./datacat-cat.gif', import.meta.url).href;
-const DATACAT_RESKIN_SHELL_ID = 'datacat-reskin-shell';
-const DATACAT_RESKIN_MAIN_ID = 'datacat-reskin-main';
 const DATACAT_MAIN_VIEW_ID = 'datacat-reskin-main-view';
 const DATACAT_MAIN_VIEW_CONTENT_ID = 'datacat-reskin-main-view-content';
 const DATACAT_MAIN_VIEW_BROWSER_CLASS = 'datacat-reskin-main-view-content--browser';
@@ -35,7 +33,7 @@ const DATACAT_BROWSER_LAYER_VISIBLE_CLASS = 'datacat-browser-stable-layer--visib
 const DATACAT_BROWSER_TOPBAR_SLOT_ID = 'datacat_browser_topbar_slot';
 const DATACAT_BROWSER_TOPBAR_BUTTON_ID = 'datacat_browser_topbar_button';
 const DATACAT_BROWSER_WAND_ID = 'datacat_browser_wand';
-const DATACAT_BROWSER_POPUP_TITLE_ID = 'datacat-browser-popup-title';
+const DATACAT_BROWSER_TITLE_ID = 'datacat-browser-title';
 const DATACAT_ST_IMPORT_MAP_KEY = 'datacatBrowserImportedCharactersById';
 const DATACAT_BROWSER_FIRST_OPEN_KEY = 'datacatBrowserAnalyticsFirstOpenAt';
 const DATACAT_BRIDGE_NONCE_PARAM = 'dc_bridge_nonce';
@@ -79,8 +77,7 @@ const activeChatOpens = datacatImportState.activeChatOpens;
 const recentChatOpens = datacatImportState.recentChatOpens;
 let persistentBrowserShell = null;
 let persistentBrowserFrame = null;
-let activeBrowserPopup = null;
-let activeBrowserPopupLayoutCleanup = null;
+let persistentBrowserLayoutCleanup = null;
 
 function normalizeDatacatUrl(value) {
     const url = new URL(String(value || '').trim() || DEFAULT_URL);
@@ -441,7 +438,7 @@ function postBridgeImportInProgress(requestId, characterId) {
     });
 }
 
-async function closeDatacatBrowserAfterImport() {
+function closeDatacatBrowserSurface() {
     window.dispatchEvent(new CustomEvent('datacat-reskin:close-main-view', {
         detail: { updateRoute: true },
     }));
@@ -453,11 +450,6 @@ async function closeDatacatBrowserAfterImport() {
     }
     document.body.classList.remove('datacat-reskin-main-view-open');
     hidePersistentBrowserShell();
-
-    const popup = activeBrowserPopup;
-    if (popup?.dlg?.hasAttribute('open')) {
-        await popup.completeCancelled();
-    }
 }
 
 async function closeBlockingSillyTavernPopups() {
@@ -482,7 +474,7 @@ function closeBlockingSillyTavernDrawers() {
 }
 
 async function revealSillyTavernChatAfterImport() {
-    await closeDatacatBrowserAfterImport();
+    closeDatacatBrowserSurface();
     await closeBlockingSillyTavernPopups();
     closeBlockingSillyTavernDrawers();
 }
@@ -765,14 +757,8 @@ function createBrowserShell() {
 }
 
 function getBrowserStableLayer() {
-    const host = document.getElementById(DATACAT_RESKIN_MAIN_ID)
-        || document.getElementById(DATACAT_RESKIN_SHELL_ID)
-        || document.body;
     let layer = document.getElementById(DATACAT_BROWSER_LAYER_ID);
     if (layer) {
-        if (layer.parentElement !== host) {
-            host.append(layer);
-        }
         return layer;
     }
 
@@ -780,7 +766,34 @@ function getBrowserStableLayer() {
     layer.id = DATACAT_BROWSER_LAYER_ID;
     layer.className = 'datacat-browser-stable-layer';
     layer.setAttribute('aria-hidden', 'true');
-    host.append(layer);
+
+    const titleBar = document.createElement('header');
+    titleBar.className = 'datacat-browser-titlebar';
+
+    const title = document.createElement('span');
+    title.id = DATACAT_BROWSER_TITLE_ID;
+    title.className = 'datacat-browser-title';
+    title.textContent = 'Datacat SillyTavern Browser';
+    titleBar.append(title);
+
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'datacat-browser-close';
+    closeButton.setAttribute('aria-label', 'Close Datacat SillyTavern Browser');
+    closeButton.setAttribute('title', 'Close Datacat SillyTavern Browser');
+    const closeIcon = document.createElement('i');
+    closeIcon.className = 'fa-solid fa-xmark';
+    closeIcon.setAttribute('aria-hidden', 'true');
+    closeButton.append(closeIcon);
+    closeButton.addEventListener('click', () => {
+        closeDatacatBrowserSurface();
+    });
+    titleBar.append(closeButton);
+
+    layer.setAttribute('aria-labelledby', DATACAT_BROWSER_TITLE_ID);
+    layer.setAttribute('inert', '');
+    layer.append(titleBar);
+    document.body.append(layer);
     return layer;
 }
 
@@ -825,11 +838,13 @@ function setPersistentBrowserShellVisible(isVisible) {
 
     layer.classList.toggle(DATACAT_BROWSER_LAYER_VISIBLE_CLASS, Boolean(isVisible));
     layer.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+    layer.toggleAttribute('inert', !isVisible);
     document.body.classList.toggle('datacat-browser-stable-layer-open', Boolean(isVisible));
     return true;
 }
 
 function hidePersistentBrowserShell() {
+    stopDatacatBrowserLayoutSync();
     setPersistentBrowserShellVisible(false);
 }
 
@@ -849,6 +864,7 @@ function mountInDatacatMainView(frame) {
     mainViewContent.classList.add(DATACAT_MAIN_VIEW_BROWSER_CLASS);
     mainViewContent.classList.add('datacat-reskin-main-view-content--panel');
 
+    stopDatacatBrowserLayoutSync();
     if (!setPersistentBrowserShellVisible(true)) {
         return false;
     }
@@ -867,52 +883,31 @@ function mountInDatacatMainView(frame) {
     return true;
 }
 
-function decorateDatacatBrowserPopup(popup) {
-    const titleBar = document.createElement('header');
-    titleBar.className = 'datacat-browser-popup-titlebar';
-
-    const title = document.createElement('span');
-    title.id = DATACAT_BROWSER_POPUP_TITLE_ID;
-    title.className = 'datacat-browser-popup-title';
-    title.textContent = 'Datacat SillyTavern Browser';
-    titleBar.append(title);
-
-    if (popup.closeButton) {
-        popup.closeButton.setAttribute('aria-label', 'Close Datacat SillyTavern Browser');
-        popup.closeButton.setAttribute('title', 'Close Datacat SillyTavern Browser');
-        titleBar.append(popup.closeButton);
-    }
-
-    popup.body.prepend(titleBar);
-    popup.dlg.classList.add('datacat-browser-popup');
-    popup.dlg.setAttribute('aria-labelledby', DATACAT_BROWSER_POPUP_TITLE_ID);
+function stopDatacatBrowserLayoutSync() {
+    persistentBrowserLayoutCleanup?.();
+    persistentBrowserLayoutCleanup = null;
 }
 
-function stopDatacatBrowserPopupLayoutSync() {
-    activeBrowserPopupLayoutCleanup?.();
-    activeBrowserPopupLayoutCleanup = null;
-}
-
-function startDatacatBrowserPopupLayoutSync(popup) {
-    stopDatacatBrowserPopupLayoutSync();
+function startDatacatBrowserLayoutSync(layer) {
+    stopDatacatBrowserLayoutSync();
 
     const sheld = document.getElementById('sheld');
     const update = () => {
-        if (!popup.dlg || window.matchMedia('(max-width: 800px)').matches) {
-            popup.dlg?.style.removeProperty('--datacat-browser-popup-left');
-            popup.dlg?.style.removeProperty('--datacat-browser-popup-width');
+        if (!(layer instanceof HTMLElement) || window.matchMedia('(max-width: 800px)').matches) {
+            layer?.style.removeProperty('--datacat-browser-surface-left');
+            layer?.style.removeProperty('--datacat-browser-surface-width');
             return;
         }
 
         const rect = sheld?.getBoundingClientRect();
         if (!rect || rect.width <= 0) {
-            popup.dlg.style.removeProperty('--datacat-browser-popup-left');
-            popup.dlg.style.removeProperty('--datacat-browser-popup-width');
+            layer.style.removeProperty('--datacat-browser-surface-left');
+            layer.style.removeProperty('--datacat-browser-surface-width');
             return;
         }
 
-        popup.dlg.style.setProperty('--datacat-browser-popup-left', `${rect.left}px`);
-        popup.dlg.style.setProperty('--datacat-browser-popup-width', `${rect.width}px`);
+        layer.style.setProperty('--datacat-browser-surface-left', `${rect.left}px`);
+        layer.style.setProperty('--datacat-browser-surface-width', `${rect.width}px`);
     };
 
     const resizeObserver = sheld && typeof ResizeObserver === 'function'
@@ -928,17 +923,17 @@ function startDatacatBrowserPopupLayoutSync(popup) {
     window.addEventListener('resize', update);
     update();
 
-    activeBrowserPopupLayoutCleanup = () => {
+    persistentBrowserLayoutCleanup = () => {
         resizeObserver?.disconnect();
         mutationObserver?.disconnect();
         window.removeEventListener('resize', update);
-        popup.dlg?.style.removeProperty('--datacat-browser-popup-left');
-        popup.dlg?.style.removeProperty('--datacat-browser-popup-width');
+        layer.style.removeProperty('--datacat-browser-surface-left');
+        layer.style.removeProperty('--datacat-browser-surface-width');
     };
 }
 
 function openDatacatBrowser() {
-    const { content, frame } = getPersistentBrowserShell();
+    const { frame } = getPersistentBrowserShell();
 
     if (isDatacatMainViewAvailable()) {
         if (mountInDatacatMainView(frame)) {
@@ -946,34 +941,16 @@ function openDatacatBrowser() {
         }
     }
 
-    // Stock fallback: keep Browser usable when the Reskin shell is not present.
-    if (activeBrowserPopup) {
-        activeBrowserPopup.dlg?.focus();
+    // Stock fallback: reveal the same connected iframe instead of putting it in
+    // a disposable Popup. Detaching an iframe destroys its browsing context.
+    ensureFrameBridgeSrc(frame);
+    const layer = ensurePersistentBrowserLayer();
+    if (!(layer instanceof HTMLElement)) {
         return;
     }
 
-    ensureFrameBridgeSrc(frame);
-    const popup = new Popup(content, POPUP_TYPE.DISPLAY, '', {
-        large: true,
-        wide: true,
-        allowHorizontalScrolling: false,
-        allowVerticalScrolling: false,
-        onClose: () => {
-            if (activeBrowserPopup === popup) {
-                stopDatacatBrowserPopupLayoutSync();
-                activeBrowserPopup = null;
-            }
-        },
-    });
-    decorateDatacatBrowserPopup(popup);
-    activeBrowserPopup = popup;
-    startDatacatBrowserPopupLayoutSync(popup);
-    void popup.show().finally(() => {
-        if (activeBrowserPopup === popup) {
-            stopDatacatBrowserPopupLayoutSync();
-            activeBrowserPopup = null;
-        }
-    });
+    startDatacatBrowserLayoutSync(layer);
+    setPersistentBrowserShellVisible(true);
 }
 
 window.datacatOpenBrowser = openDatacatBrowser;

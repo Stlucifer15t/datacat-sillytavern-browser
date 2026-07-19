@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Keep the embedded DataCat iframe connected while the Browser is closed so
+  reopening preserves its current page, navigation history, and in-page state.
+
 ## 0.1.2
 
 - Allow user-initiated file downloads from the sandboxed DataCat iframe.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Refresh release URLs so SillyTavern cannot reuse the earlier `0.1.0`
+  JavaScript modules after reinstalling the extension.
+
 ## 0.1.0
 
 - Initial release of the standalone Datacat character browser for SillyTavern.

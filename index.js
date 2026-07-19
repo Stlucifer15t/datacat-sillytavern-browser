@@ -1,15 +1,12 @@
 import { Popup } from '../../../popup.js';
 import {
     characters,
-    clearChat,
-    createOrEditCharacter,
-    getChat,
+    doNewChat,
     getCharacters,
     getRequestHeaders,
     selectCharacterById,
     this_chid,
 } from '../../../../script.js';
-import { humanizedDateTime } from '../../../RossAscends-mods.js';
 import { accountStorage } from '../../../util/AccountStorage.js';
 import {
     boundedBridgeString,
@@ -20,8 +17,8 @@ import {
     requireBridgeRequestId,
     requireDatacatCharacterId,
     validateDatacatPngPayload,
-} from './bridge_security.js?v=0.1.3';
-import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.3';
+} from './bridge_security.js?v=0.1.4';
+import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.4';
 
 const DEFAULT_URL = DATACAT_BROWSER_URL;
 const DATACAT_CAT_ICON_URL = new URL('./datacat-cat.gif', import.meta.url).href;
@@ -85,6 +82,16 @@ function normalizeDatacatUrl(value) {
         throw new Error('Datacat Browser URL origin is not allowed.');
     }
     return url.href;
+}
+
+function getMultipartRequestHeaders() {
+    const headers = { ...(getRequestHeaders() || {}) };
+    for (const key of Object.keys(headers)) {
+        if (key.toLowerCase() === 'content-type') {
+            delete headers[key];
+        }
+    }
+    return headers;
 }
 
 function createBridgeNonce() {
@@ -502,11 +509,6 @@ function pruneRecentChatOpens() {
     }
 }
 
-function buildFreshChatNameForCharacter(characterIndex) {
-    const characterName = String(characters[characterIndex]?.name || 'Character').trim() || 'Character';
-    return `${characterName} - ${humanizedDateTime()}`;
-}
-
 async function openNewChatForCharacterIndex(characterIndex, metadata = {}) {
     if (characterIndex < 0 || !characters[characterIndex]) {
         throw new Error('Imported character is not available in SillyTavern.');
@@ -537,21 +539,18 @@ async function openNewChatForCharacterIndex(characterIndex, metadata = {}) {
     }
 
     const openPromise = (async () => {
-        const chatName = buildFreshChatNameForCharacter(characterIndex);
-        characters[characterIndex].chat = chatName;
-
-        if (String(this_chid) === String(characterIndex)) {
-            await clearChat({ clearData: true });
-            await getChat();
-        } else {
+        if (String(this_chid) !== String(characterIndex)) {
             await selectCharacterById(characterIndex, { switchMenu: false });
         }
 
         if (String(this_chid) !== String(characterIndex)) {
             throw new Error('SillyTavern is still busy and could not switch characters.');
         }
-        $('#selected_chat_pole').val(chatName);
-        await createOrEditCharacter(new CustomEvent('newChat'));
+        await doNewChat();
+        const chatName = String(characters[characterIndex]?.chat || '').trim();
+        if (!chatName) {
+            throw new Error('SillyTavern could not create a new character chat.');
+        }
         recentChatOpens.set(chatOpenKey, {
             openedAt: Date.now(),
             chat: chatName,
@@ -627,7 +626,7 @@ async function importDatacatCharacterPayload(payload) {
         });
         const response = await fetch('/api/characters/import', {
             method: 'POST',
-            headers: getRequestHeaders({ omitContentType: true }),
+            headers: getMultipartRequestHeaders(),
             body: formData,
             cache: 'no-cache',
         });

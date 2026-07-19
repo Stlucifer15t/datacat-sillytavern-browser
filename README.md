@@ -24,7 +24,7 @@ Browse datacat from SillyTavern.
 - Opens the imported character in a fresh chat at the first message.
 - Works with stock SillyTavern; Datacat Reskin is optional.
 
-Requires SillyTavern 1.18.0 or newer and internet access to datacat.
+Requires SillyTavern 1.12.12 or newer and internet access to datacat.
 
 ## Privacy
 

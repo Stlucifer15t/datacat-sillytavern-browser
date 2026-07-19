@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- Support SillyTavern 1.12.12 and newer by using its stable new-chat API.
+
 ## 0.1.3
 
 - Keep the embedded DataCat iframe connected while the Browser is closed so

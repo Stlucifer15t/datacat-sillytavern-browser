@@ -17,8 +17,8 @@ import {
     requireBridgeRequestId,
     requireDatacatCharacterId,
     validateDatacatPngPayload,
-} from './bridge_security.js?v=0.1.4';
-import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.4';
+} from './bridge_security.js?v=0.1.5';
+import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.5';
 
 const DEFAULT_URL = DATACAT_BROWSER_URL;
 const DATACAT_CAT_ICON_URL = new URL('./datacat-cat.gif', import.meta.url).href;

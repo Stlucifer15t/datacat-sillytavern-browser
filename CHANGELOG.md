@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Bug fix: Google sign-in launched from the embedded Datacat browser now uses
+  Datacat's top-level authentication handoff instead of a Firebase popup in
+  the iframe, preventing `auth/popup-blocked` failures.
+
 ## 0.1.4
 
 - Support SillyTavern 1.12.12 and newer by using its stable new-chat API.

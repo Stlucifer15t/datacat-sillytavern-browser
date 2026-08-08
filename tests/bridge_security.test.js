@@ -150,10 +150,10 @@ test('manifest exposes public release metadata', () => {
     const manifest = JSON.parse(fs.readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
     assert.equal(manifest.author, 'Data Cat');
     assert.equal(manifest.display_name, 'Datacat SillyTavern Browser');
-    assert.equal(manifest.version, '0.1.4');
+    assert.equal(manifest.version, '0.1.5');
     assert.equal(manifest.version, DATACAT_BROWSER_VERSION);
-    assert.equal(manifest.js, 'index.js?v=0.1.4');
-    assert.equal(manifest.css, 'style.css?v=0.1.4');
+    assert.equal(manifest.js, 'index.js?v=0.1.5');
+    assert.equal(manifest.css, 'style.css?v=0.1.5');
     assert.equal(manifest.minimum_client_version, '1.12.12');
     assert.deepEqual(manifest.dependencies, []);
     assert.equal('requires' in manifest, false);
@@ -173,6 +173,6 @@ test('manifest exposes public release metadata', () => {
 
 test('release entry point cache-busts internal modules', () => {
     const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.4';/);
-    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.4';/);
+    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.5';/);
+    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.5';/);
 });

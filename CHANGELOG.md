@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6
+
+- Bug fix: relay Google authentication results through the SillyTavern host
+  when Firefox gives an embedded Datacat login popup the host page as its
+  opener, allowing the iframe login flow to complete.
+
 ## 0.1.5
 
 - Bug fix: Google sign-in launched from the embedded Datacat browser now uses

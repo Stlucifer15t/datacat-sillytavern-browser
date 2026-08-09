@@ -39,9 +39,10 @@ const DATACAT_BRIDGE_MSG_READY = 'datacat:st-bridge:ready';
 const DATACAT_BRIDGE_MSG_PREPARE = 'datacat:st-character-card:prepare';
 const DATACAT_BRIDGE_MSG_CARD = 'datacat:st-character-card';
 const DATACAT_BRIDGE_MSG_ACK = 'datacat:st-character-card:ack';
-const DATACAT_AUTH_HANDOFF_MSG = 'datacat:google-auth-handoff';
+const DATACAT_AUTH_HANDOFF_MSG = 'datacat:auth-handoff';
 const DATACAT_AUTH_HANDOFF_RELAY = 'sillytavern-datacat-browser-auth-relay';
 const DATACAT_AUTH_HANDOFF_NONCE_PATTERN = /^[A-Za-z0-9_-]{16,128}$/;
+const DATACAT_AUTH_HANDOFF_CODE_PATTERN = /^dch_[A-Za-z0-9_-]{16}_[A-Za-z0-9_-]{43}$/;
 const DATACAT_AUTH_TOKEN_MAX_LENGTH = 12000;
 const DATACAT_BRIDGE_PARENT_SOURCE = 'sillytavern-datacat-browser';
 const DATACAT_BRIDGE_HEARTBEAT_MS = 5000;
@@ -757,17 +758,24 @@ function getTrustedAuthHandoffMessage(event) {
     const firebaseIdToken = typeof data?.firebaseIdToken === 'string'
         ? data.firebaseIdToken.trim()
         : '';
+    const handoffCode = typeof data?.handoffCode === 'string'
+        ? data.handoffCode.trim()
+        : '';
+    const validFirebaseToken = firebaseIdToken
+        && firebaseIdToken.length <= DATACAT_AUTH_TOKEN_MAX_LENGTH;
+    const validHandoffCode = DATACAT_AUTH_HANDOFF_CODE_PATTERN.test(handoffCode);
     if (
         !data
         || typeof data !== 'object'
         || data.type !== DATACAT_AUTH_HANDOFF_MSG
         || !DATACAT_AUTH_HANDOFF_NONCE_PATTERN.test(nonce)
-        || !firebaseIdToken
-        || firebaseIdToken.length > DATACAT_AUTH_TOKEN_MAX_LENGTH
+        || Boolean(validFirebaseToken) === Boolean(validHandoffCode)
     ) {
         return null;
     }
-    return { nonce, firebaseIdToken };
+    return validFirebaseToken
+        ? { nonce, firebaseIdToken }
+        : { nonce, handoffCode };
 }
 
 function createBrowserShell() {
@@ -990,7 +998,9 @@ window.addEventListener('message', (event) => {
         activeBridge.frame.contentWindow.postMessage({
             type: DATACAT_AUTH_HANDOFF_MSG,
             nonce: authHandoff.nonce,
-            firebaseIdToken: authHandoff.firebaseIdToken,
+            ...(authHandoff.firebaseIdToken
+                ? { firebaseIdToken: authHandoff.firebaseIdToken }
+                : { handoffCode: authHandoff.handoffCode }),
             relayedBy: DATACAT_AUTH_HANDOFF_RELAY,
         }, event.origin);
         return;

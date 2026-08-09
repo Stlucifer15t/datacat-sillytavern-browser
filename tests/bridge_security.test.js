@@ -177,13 +177,16 @@ test('release entry point cache-busts internal modules', () => {
     assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.6';/);
 });
 
-test('embedded Google auth results relay through the trusted bridge frame', () => {
+test('embedded auth results relay through the trusted bridge frame', () => {
     const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-    assert.match(source, /const DATACAT_AUTH_HANDOFF_MSG = 'datacat:google-auth-handoff'/);
+    assert.match(source, /const DATACAT_AUTH_HANDOFF_MSG = 'datacat:auth-handoff'/);
     assert.match(source, /const DATACAT_AUTH_HANDOFF_RELAY = 'sillytavern-datacat-browser-auth-relay'/);
+    assert.match(source, /const DATACAT_AUTH_HANDOFF_CODE_PATTERN = \/\^dch_/);
     assert.match(source, /function getTrustedAuthHandoffMessage\(event\)/);
     assert.match(source, /isAllowedBridgeOrigin\(event\.origin\)/);
-    assert.match(source, /firebaseIdToken\.length > DATACAT_AUTH_TOKEN_MAX_LENGTH/);
+    assert.match(source, /firebaseIdToken\.length <= DATACAT_AUTH_TOKEN_MAX_LENGTH/);
+    assert.match(source, /Boolean\(validFirebaseToken\) === Boolean\(validHandoffCode\)/);
+    assert.match(source, /\{ handoffCode: authHandoff\.handoffCode \}/);
     assert.match(source, /relayedBy: DATACAT_AUTH_HANDOFF_RELAY/);
     assert.match(source, /activeBridge\.frame\.contentWindow\.postMessage\(/);
 });

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Bug fix: complete email/password login from Datacat's top-level login window
+  by relaying a short-lived, single-use handoff credential back to the embedded
+  Browser without exposing the user's password or durable Datacat session.
+
 ## 0.1.6
 
 - Bug fix: relay Google authentication results through the SillyTavern host

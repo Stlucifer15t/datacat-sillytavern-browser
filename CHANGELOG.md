@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.7
 
 - Bug fix: complete email/password login from Datacat's top-level login window
   by relaying a short-lived, single-use handoff credential back to the embedded

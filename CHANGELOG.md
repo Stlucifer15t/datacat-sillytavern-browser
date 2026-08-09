@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.9
+
+- Bug fix: use Datacat Client API account linking for top-level login and
+  registration, then activate the linked account inside the embedded Browser.
+- Keep Datacat credentials and temporary Client API tokens out of the
+  SillyTavern host page and avoid browser opener or shared-storage handoffs.
+
 ## 0.1.8
 
 - Open all Datacat login and registration screens in a top-level Datacat
@@ -31,12 +38,12 @@
 
 ## 0.1.3
 
-- Keep the embedded DataCat iframe connected while the Browser is closed so
+- Keep the embedded Datacat iframe connected while the Browser is closed so
   reopening preserves its current page, navigation history, and in-page state.
 
 ## 0.1.2
 
-- Allow user-initiated file downloads from the sandboxed DataCat iframe.
+- Allow user-initiated file downloads from the sandboxed Datacat iframe.
 - Close the Browser, other open SillyTavern popups, and unpinned drawers after
   opening a character chat so the chat remains visible.
 

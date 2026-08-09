@@ -1,6 +1,6 @@
 # Datacat SillyTavern Browser
 
-Browse datacat from SillyTavern.
+Browse Datacat from SillyTavern.
 
 ## Install in SillyTavern
 
@@ -9,7 +9,7 @@ Browse datacat from SillyTavern.
 3. Paste this Git URL:
 
    ```text
-   https://github.com/datacat-run/sillytavern-browser
+   https://github.com/datacat-run/datacat-sillytavern-browser
    ```
 
 4. Choose **Install just for me**. SillyTavern administrators can instead
@@ -19,17 +19,17 @@ Browse datacat from SillyTavern.
 
 ## What it does
 
-- Browses datacat inside SillyTavern.
+- Browses Datacat inside SillyTavern.
 - Imports a selected character through SillyTavern's native PNG import flow.
 - Opens the imported character in a fresh chat at the first message.
 - Works with stock SillyTavern; Datacat Reskin is optional.
 
-Requires SillyTavern 1.12.12 or newer and internet access to datacat.
+Requires SillyTavern 1.12.12 or newer and internet access to Datacat.
 
 ## Privacy
 
 No SillyTavern chats, API keys, model settings, or request headers are sent to
-datacat. Basic anonymous usage signals are used for aggregate extension
+Datacat. Basic anonymous usage signals are used for aggregate extension
 traffic counts; they contain no persistent installation or device identifier.
 
 ## Development

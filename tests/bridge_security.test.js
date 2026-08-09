@@ -150,12 +150,12 @@ test('Browser close keeps the iframe connected for stateful reopen', () => {
 
 test('manifest exposes public release metadata', () => {
     const manifest = JSON.parse(fs.readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
-    assert.equal(manifest.author, 'Data Cat');
+    assert.equal(manifest.author, 'Datacat');
     assert.equal(manifest.display_name, 'Datacat SillyTavern Browser');
-    assert.equal(manifest.version, '0.1.8');
+    assert.equal(manifest.version, '0.1.9');
     assert.equal(manifest.version, DATACAT_BROWSER_VERSION);
-    assert.equal(manifest.js, 'index.js?v=0.1.8');
-    assert.equal(manifest.css, 'style.css?v=0.1.8');
+    assert.equal(manifest.js, 'index.js?v=0.1.9');
+    assert.equal(manifest.css, 'style.css?v=0.1.9');
     assert.equal(manifest.minimum_client_version, '1.12.12');
     assert.deepEqual(manifest.dependencies, []);
     assert.equal('requires' in manifest, false);
@@ -175,13 +175,13 @@ test('manifest exposes public release metadata', () => {
 
 test('release entry point cache-busts internal modules', () => {
     const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.8';/);
-    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.8';/);
+    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.9';/);
+    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.9';/);
 });
 
-test('embedded auth stays inside Datacat popup mode', () => {
+test('embedded auth uses Datacat Client API linking', () => {
     const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-    assert.equal(DATACAT_BROWSER_AUTH_MODE, 'popup');
+    assert.equal(DATACAT_BROWSER_AUTH_MODE, 'client-link');
     assert.doesNotMatch(source, /DATACAT_AUTH_HANDOFF_MSG/);
     assert.doesNotMatch(source, /firebaseIdToken/);
     assert.doesNotMatch(source, /getTrustedAuthHandoffMessage/);

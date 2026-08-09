@@ -1,9 +1,9 @@
 {
     "name": "datacat-browser-sillytavern-extension",
-    "version": "0.1.8",
+    "version": "0.1.9",
     "private": true,
-    "description": "Browse Data Cat from SillyTavern",
-    "author": "Data Cat",
+    "description": "Browse Datacat from SillyTavern",
+    "author": "Datacat",
     "license": "AGPL-3.0",
     "type": "module",
     "scripts": {

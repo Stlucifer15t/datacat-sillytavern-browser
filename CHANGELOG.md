@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.8
 
 - Open all Datacat login and registration screens in a top-level Datacat
   window while keeping the embedded character browser in place.

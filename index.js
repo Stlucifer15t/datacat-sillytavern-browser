@@ -39,11 +39,6 @@ const DATACAT_BRIDGE_MSG_READY = 'datacat:st-bridge:ready';
 const DATACAT_BRIDGE_MSG_PREPARE = 'datacat:st-character-card:prepare';
 const DATACAT_BRIDGE_MSG_CARD = 'datacat:st-character-card';
 const DATACAT_BRIDGE_MSG_ACK = 'datacat:st-character-card:ack';
-const DATACAT_AUTH_HANDOFF_MSG = 'datacat:auth-handoff';
-const DATACAT_AUTH_HANDOFF_RELAY = 'sillytavern-datacat-browser-auth-relay';
-const DATACAT_AUTH_HANDOFF_NONCE_PATTERN = /^[A-Za-z0-9_-]{16,128}$/;
-const DATACAT_AUTH_HANDOFF_CODE_PATTERN = /^dch_[A-Za-z0-9_-]{16}_[A-Za-z0-9_-]{43}$/;
-const DATACAT_AUTH_TOKEN_MAX_LENGTH = 12000;
 const DATACAT_BRIDGE_PARENT_SOURCE = 'sillytavern-datacat-browser';
 const DATACAT_BRIDGE_HEARTBEAT_MS = 5000;
 const DATACAT_IMPORT_ACK_TTL_MS = 2 * 60 * 1000;
@@ -746,38 +741,6 @@ function isBridgeInitRequest(event) {
     );
 }
 
-function getTrustedAuthHandoffMessage(event) {
-    if (!activeBridge?.frame?.contentWindow || !isAllowedBridgeOrigin(event.origin)) {
-        return null;
-    }
-    if (event.source === activeBridge.frame.contentWindow) {
-        return null;
-    }
-    const data = event.data;
-    const nonce = typeof data?.nonce === 'string' ? data.nonce.trim() : '';
-    const firebaseIdToken = typeof data?.firebaseIdToken === 'string'
-        ? data.firebaseIdToken.trim()
-        : '';
-    const handoffCode = typeof data?.handoffCode === 'string'
-        ? data.handoffCode.trim()
-        : '';
-    const validFirebaseToken = firebaseIdToken
-        && firebaseIdToken.length <= DATACAT_AUTH_TOKEN_MAX_LENGTH;
-    const validHandoffCode = DATACAT_AUTH_HANDOFF_CODE_PATTERN.test(handoffCode);
-    if (
-        !data
-        || typeof data !== 'object'
-        || data.type !== DATACAT_AUTH_HANDOFF_MSG
-        || !DATACAT_AUTH_HANDOFF_NONCE_PATTERN.test(nonce)
-        || Boolean(validFirebaseToken) === Boolean(validHandoffCode)
-    ) {
-        return null;
-    }
-    return validFirebaseToken
-        ? { nonce, firebaseIdToken }
-        : { nonce, handoffCode };
-}
-
 function createBrowserShell() {
     return $(`
         <div class="datacat-browser-shell" id="datacat-browser-host">
@@ -993,19 +956,6 @@ window.datacatOpenBrowser = openDatacatBrowser;
 window.addEventListener('datacat-browser:open', openDatacatBrowser);
 window.addEventListener('datacat-browser:park-main-view', hidePersistentBrowserShell);
 window.addEventListener('message', (event) => {
-    const authHandoff = getTrustedAuthHandoffMessage(event);
-    if (authHandoff) {
-        activeBridge.frame.contentWindow.postMessage({
-            type: DATACAT_AUTH_HANDOFF_MSG,
-            nonce: authHandoff.nonce,
-            ...(authHandoff.firebaseIdToken
-                ? { firebaseIdToken: authHandoff.firebaseIdToken }
-                : { handoffCode: authHandoff.handoffCode }),
-            relayedBy: DATACAT_AUTH_HANDOFF_RELAY,
-        }, event.origin);
-        return;
-    }
-
     if (isBridgeInitRequest(event)) {
         activeBridge.origin = event.origin;
         sendBridgeInit(event.origin);

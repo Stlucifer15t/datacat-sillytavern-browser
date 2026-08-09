@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
     boundedBridgeString,
     buildDatacatBridgeUrl,
+    DATACAT_BROWSER_AUTH_MODE,
     DATACAT_BROWSER_CLIENT,
     DATACAT_BROWSER_URL,
     DATACAT_BROWSER_VERSION,
@@ -49,6 +50,7 @@ test('bridge URL identifies extension traffic without a persistent identifier', 
     assert.equal(regular.searchParams.get('dc_embed'), 'st');
     assert.equal(regular.searchParams.get('dc_client'), DATACAT_BROWSER_CLIENT);
     assert.equal(regular.searchParams.get('dc_client_version'), DATACAT_BROWSER_VERSION);
+    assert.equal(regular.searchParams.get('dc_auth_mode'), DATACAT_BROWSER_AUTH_MODE);
     assert.equal(regular.searchParams.get('dc_first_open'), null);
     assert.equal([...regular.searchParams.keys()].some(key => /user|install.*id|device/i.test(key)), false);
 
@@ -177,16 +179,10 @@ test('release entry point cache-busts internal modules', () => {
     assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.7';/);
 });
 
-test('embedded auth results relay through the trusted bridge frame', () => {
+test('embedded auth stays inside Datacat popup mode', () => {
     const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-    assert.match(source, /const DATACAT_AUTH_HANDOFF_MSG = 'datacat:auth-handoff'/);
-    assert.match(source, /const DATACAT_AUTH_HANDOFF_RELAY = 'sillytavern-datacat-browser-auth-relay'/);
-    assert.match(source, /const DATACAT_AUTH_HANDOFF_CODE_PATTERN = \/\^dch_/);
-    assert.match(source, /function getTrustedAuthHandoffMessage\(event\)/);
-    assert.match(source, /isAllowedBridgeOrigin\(event\.origin\)/);
-    assert.match(source, /firebaseIdToken\.length <= DATACAT_AUTH_TOKEN_MAX_LENGTH/);
-    assert.match(source, /Boolean\(validFirebaseToken\) === Boolean\(validHandoffCode\)/);
-    assert.match(source, /\{ handoffCode: authHandoff\.handoffCode \}/);
-    assert.match(source, /relayedBy: DATACAT_AUTH_HANDOFF_RELAY/);
-    assert.match(source, /activeBridge\.frame\.contentWindow\.postMessage\(/);
+    assert.equal(DATACAT_BROWSER_AUTH_MODE, 'popup');
+    assert.doesNotMatch(source, /DATACAT_AUTH_HANDOFF_MSG/);
+    assert.doesNotMatch(source, /firebaseIdToken/);
+    assert.doesNotMatch(source, /getTrustedAuthHandoffMessage/);
 });

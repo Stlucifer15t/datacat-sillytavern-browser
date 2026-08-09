@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Open all Datacat login and registration screens in a top-level Datacat
+  window while keeping the embedded character browser in place.
+- Remove the obsolete SillyTavern-host authentication relay; the Datacat iframe
+  now consumes its server-backed one-time login result directly.
+
 ## 0.1.7
 
 - Bug fix: complete email/password login from Datacat's top-level login window

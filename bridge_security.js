@@ -1,6 +1,7 @@
 export const DATACAT_BROWSER_URL = 'https://datacat.run/characters/recent';
 export const DATACAT_BROWSER_CLIENT = 'datacat-browser';
 export const DATACAT_BROWSER_VERSION = '0.1.7';
+export const DATACAT_BROWSER_AUTH_MODE = 'popup';
 export const DATACAT_MAX_PNG_BYTES = 32 * 1024 * 1024;
 
 const DATACAT_ALLOWED_BRIDGE_ORIGINS = new Set([
@@ -33,6 +34,7 @@ export function buildDatacatBridgeUrl(value, { nonce, firstOpen = false } = {}) 
     url.searchParams.set('dc_bridge_nonce', normalizedNonce);
     url.searchParams.set('dc_client', DATACAT_BROWSER_CLIENT);
     url.searchParams.set('dc_client_version', DATACAT_BROWSER_VERSION);
+    url.searchParams.set('dc_auth_mode', DATACAT_BROWSER_AUTH_MODE);
     if (firstOpen) {
         url.searchParams.set('dc_first_open', '1');
     } else {

@@ -175,8 +175,8 @@ test('manifest exposes public release metadata', () => {
 
 test('release entry point cache-busts internal modules', () => {
     const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.9';/);
-    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.9';/);
+    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.10';/);
+    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.10';/);
 });
 
 test('embedded auth uses Datacat Client API linking', () => {

@@ -1,6 +1,6 @@
 export const DATACAT_BROWSER_URL = 'https://datacat.run/characters/recent';
 export const DATACAT_BROWSER_CLIENT = 'datacat-browser';
-export const DATACAT_BROWSER_VERSION = '0.1.9';
+export const DATACAT_BROWSER_VERSION = '0.1.10';
 export const DATACAT_BROWSER_AUTH_MODE = 'client-link';
 export const DATACAT_MAX_PNG_BYTES = 32 * 1024 * 1024;
 
@@ -65,7 +65,8 @@ export function boundedBridgeString(value, maxLength = 512) {
 }
 
 export function validateDatacatPngPayload(value) {
-    if (!(value instanceof ArrayBuffer)) {
+    value = toArrayBuffer(value);
+    if (!value) {
         throw new Error('Datacat PNG payload is invalid.');
     }
     if (value.byteLength < PNG_SIGNATURE.length) {
@@ -80,4 +81,16 @@ export function validateDatacatPngPayload(value) {
         throw new Error('Datacat payload is not a PNG file.');
     }
     return value;
+}
+
+// Accept ArrayBuffers from any realm (Android WebViews and some browsers hand
+// over cross-realm buffers that fail `instanceof`) as well as typed array views.
+function toArrayBuffer(value) {
+    if (value instanceof ArrayBuffer || Object.prototype.toString.call(value) === '[object ArrayBuffer]') {
+        return value;
+    }
+    if (ArrayBuffer.isView(value)) {
+        return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+    }
+    return null;
 }

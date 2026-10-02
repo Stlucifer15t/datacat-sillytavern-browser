@@ -17,8 +17,8 @@ import {
     requireBridgeRequestId,
     requireDatacatCharacterId,
     validateDatacatPngPayload,
-} from './bridge_security.js?v=0.1.9';
-import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.9';
+} from './bridge_security.js?v=0.1.10';
+import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.10';
 
 const DEFAULT_URL = DATACAT_BROWSER_URL;
 const DATACAT_CAT_ICON_URL = new URL('./datacat-cat.gif', import.meta.url).href;
@@ -603,7 +603,10 @@ async function importDatacatCharacterPayload(payload) {
             return;
         }
 
-        const png = validateDatacatPngPayload(payload.png);
+        const rawPng = typeof Blob === 'function' && payload.png instanceof Blob
+            ? await payload.png.arrayBuffer()
+            : payload.png;
+        const png = validateDatacatPngPayload(rawPng);
 
         const preservedName = buildDatacatPreservedName(metadata);
         const uploadName = ensurePngExtension(sanitizeImportNamePart(
@@ -748,11 +751,56 @@ function createBrowserShell() {
                 class="datacat-browser-frame"
                 title="Explore"
                 loading="eager"
-                sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+                sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-storage-access-by-user-activation"
+                allow="storage-access; clipboard-write"
                 referrerpolicy="no-referrer">
             </iframe>
         </div>
     `);
+}
+
+const DATACAT_LOGIN_URL = new URL('/login', DEFAULT_URL).href;
+
+function createTitlebarButton(iconClass, label, onClick) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'datacat-browser-close datacat-browser-action';
+    button.setAttribute('aria-label', label);
+    button.setAttribute('title', label);
+    const icon = document.createElement('i');
+    icon.className = iconClass;
+    icon.setAttribute('aria-hidden', 'true');
+    button.append(icon);
+    button.addEventListener('click', onClick);
+    return button;
+}
+
+function reloadDatacatBrowserFrame() {
+    const frameElement = persistentBrowserFrame?.[0];
+    if (frameElement instanceof HTMLIFrameElement) {
+        setFrameBridgeSrc(persistentBrowserFrame);
+    }
+}
+
+// Fallback for hosts where the embedded login cannot finish (for example the
+// SillyTavern Android app / WebViews, which block third-party cookies and
+// iframe-launched popups). The login opens top-level from a user gesture on the
+// SillyTavern page; afterwards the user reloads the embedded Browser.
+function openDatacatLoginWindow() {
+    let opened = null;
+    try {
+        opened = window.open(DATACAT_LOGIN_URL, '_blank', 'noopener,noreferrer');
+    } catch (_) {
+        opened = null;
+    }
+    // With noopener, browsers return null even on success, so always explain the next step.
+    toastr?.info?.(
+        'Log in to Datacat in the window that opened, then come back and press the reload button in the Browser title bar. '
+        + `If no window opened, visit ${DATACAT_LOGIN_URL} in your device browser.`,
+        'Datacat login',
+        { timeOut: 12000 },
+    );
+    return opened;
 }
 
 function getBrowserStableLayer() {
@@ -774,6 +822,11 @@ function getBrowserStableLayer() {
     title.className = 'datacat-browser-title';
     title.textContent = 'Datacat SillyTavern Browser';
     titleBar.append(title);
+
+    titleBar.append(
+        createTitlebarButton('fa-solid fa-right-to-bracket', 'Open Datacat login in a new window', openDatacatLoginWindow),
+        createTitlebarButton('fa-solid fa-rotate-right', 'Reload Datacat (use after logging in)', reloadDatacatBrowserFrame),
+    );
 
     const closeButton = document.createElement('button');
     closeButton.type = 'button';

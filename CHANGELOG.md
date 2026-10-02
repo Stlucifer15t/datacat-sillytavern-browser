@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.10
+
+- Bug fix: let the embedded Datacat iframe request storage access so login
+  state can persist where third-party cookies are restricted.
+- Add title-bar "Log in" and "Reload" buttons as a fallback for hosts such as
+  the SillyTavern Android app, where the embedded login can stall.
+- Bug fix: accept PNG payloads delivered as cross-realm ArrayBuffers, typed
+  arrays, or Blobs so imports no longer fail with "payload is invalid".
+
 ## 0.1.9
 
 - Bug fix: use Datacat Client API account linking for top-level login and

@@ -153,6 +153,14 @@
     cursor: pointer;
 }
 
+.datacat-browser-titlebar .datacat-browser-action {
+    margin-right: 2px !important;
+}
+
+.datacat-browser-titlebar .datacat-browser-title + .datacat-browser-action {
+    margin-left: auto !important;
+}
+
 .datacat-browser-titlebar .datacat-browser-close:hover {
     background: rgb(148 163 184 / 18%);
 }

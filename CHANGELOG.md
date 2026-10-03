@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.11
+
+- Bug fix: send `preserved_name` with a `.png` suffix on TauriTavern
+  (`window.__TAURI__` / `window.__TAURI_INTERNALS__`), and retry once with the
+  other form if the backend rejects the name.
+- Surface the backend's `result.error` when a character import fails.
+
 ## 0.1.10
 
 - Bug fix: let the embedded Datacat iframe request storage access so login

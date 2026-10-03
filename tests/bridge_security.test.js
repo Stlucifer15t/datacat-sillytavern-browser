@@ -152,10 +152,10 @@ test('manifest exposes public release metadata', () => {
     const manifest = JSON.parse(fs.readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
     assert.equal(manifest.author, 'Datacat');
     assert.equal(manifest.display_name, 'Datacat SillyTavern Browser');
-    assert.equal(manifest.version, '0.1.10');
+    assert.equal(manifest.version, '0.1.11');
     assert.equal(manifest.version, DATACAT_BROWSER_VERSION);
-    assert.equal(manifest.js, 'index.js?v=0.1.10');
-    assert.equal(manifest.css, 'style.css?v=0.1.10');
+    assert.equal(manifest.js, 'index.js?v=0.1.11');
+    assert.equal(manifest.css, 'style.css?v=0.1.11');
     assert.equal(manifest.minimum_client_version, '1.12.12');
     assert.deepEqual(manifest.dependencies, []);
     assert.equal('requires' in manifest, false);
@@ -175,8 +175,19 @@ test('manifest exposes public release metadata', () => {
 
 test('release entry point cache-busts internal modules', () => {
     const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.10';/);
-    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.10';/);
+    assert.match(source, /from '\.\/bridge_security\.js\?v=0\.1\.11';/);
+    assert.match(source, /from '\.\/chat_handoff\.js\?v=0\.1\.11';/);
+});
+
+test('TauriTavern import sends .png preserved_name and retries the other form', () => {
+    const source = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+    assert.match(source, /function isTauriTavernHost\(\) \{\s*return Boolean\(window\.__TAURI__ \|\| window\.__TAURI_INTERNALS__\);/);
+    assert.match(source, /isTauriTavernHost\(\) \? ensurePngExtension\(withoutPng\) : withoutPng/);
+    assert.match(source, /isPreservedNameRejection\(result\)/);
+    assert.match(source, /alternatePreservedName\(preservedName\)/);
+    assert.match(source, /throw new Error\(sillyTavernImportErrorMessage\(result\)\)/);
+    assert.match(source, /const error = String\(result\.error \|\| ''\)\.trim\(\)/);
+    assert.match(source, /formData\.append\('preserved_name', preservedName\)/);
 });
 
 test('embedded auth uses Datacat Client API linking', () => {

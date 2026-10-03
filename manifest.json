@@ -3,9 +3,9 @@
     "loading_order": 99,
     "dependencies": [],
     "minimum_client_version": "1.12.12",
-    "js": "index.js?v=0.1.9",
-    "css": "style.css?v=0.1.9",
+    "js": "index.js?v=0.1.10",
+    "css": "style.css?v=0.1.10",
     "author": "Datacat",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "homePage": "https://datacat.run"
 }

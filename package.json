@@ -1,6 +1,6 @@
 {
     "name": "datacat-browser-sillytavern-extension",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "private": true,
     "description": "Browse Datacat from SillyTavern",
     "author": "Datacat",

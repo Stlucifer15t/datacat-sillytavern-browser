@@ -1,6 +1,6 @@
 export const DATACAT_BROWSER_URL = 'https://datacat.run/characters/recent';
 export const DATACAT_BROWSER_CLIENT = 'datacat-browser';
-export const DATACAT_BROWSER_VERSION = '0.1.10';
+export const DATACAT_BROWSER_VERSION = '0.1.11';
 export const DATACAT_BROWSER_AUTH_MODE = 'client-link';
 export const DATACAT_MAX_PNG_BYTES = 32 * 1024 * 1024;
 

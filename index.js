@@ -17,8 +17,8 @@ import {
     requireBridgeRequestId,
     requireDatacatCharacterId,
     validateDatacatPngPayload,
-} from './bridge_security.js?v=0.1.10';
-import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.10';
+} from './bridge_security.js?v=0.1.11';
+import { pinDatacatChatToTop } from './chat_handoff.js?v=0.1.11';
 
 const DEFAULT_URL = DATACAT_BROWSER_URL;
 const DATACAT_CAT_ICON_URL = new URL('./datacat-cat.gif', import.meta.url).href;
@@ -297,6 +297,50 @@ function buildDatacatPreservedName(metadata = {}) {
     const shortId = sanitizeImportNamePart(characterId.replace(/-/g, ''), 'unknown', 36);
     const title = sanitizeImportNamePart(metadata.characterName || metadata.name || 'character', 'character', 44);
     return `datacat_${title}_${shortId}`;
+}
+
+function isTauriTavernHost() {
+    return Boolean(window.__TAURI__ || window.__TAURI_INTERNALS__);
+}
+
+function preservedNameForHost(baseName) {
+    const withoutPng = stripPngExtension(baseName);
+    return isTauriTavernHost() ? ensurePngExtension(withoutPng) : withoutPng;
+}
+
+function alternatePreservedName(value) {
+    const raw = String(value || '').trim();
+    return /\.png$/i.test(raw) ? stripPngExtension(raw) : ensurePngExtension(raw);
+}
+
+function isPreservedNameRejection(result = {}) {
+    const haystack = [result.error, result.message]
+        .map(part => String(part || '').toLowerCase())
+        .join(' ');
+    return haystack.includes('preserved_name');
+}
+
+function sillyTavernImportErrorMessage(result = {}) {
+    const error = String(result.error || '').trim();
+    if (error) return error;
+    const message = String(result.message || '').trim();
+    return message || 'SillyTavern could not import this PNG.';
+}
+
+async function postSillyTavernCharacterImport({ file, preservedName, metadata }) {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    formData.append('file_type', 'png');
+    formData.append('preserved_name', preservedName);
+    formData.append('datacat_metadata', JSON.stringify(buildDatacatImportMetadata(metadata)));
+    const response = await fetch('/api/characters/import', {
+        method: 'POST',
+        headers: getMultipartRequestHeaders(),
+        body: formData,
+        cache: 'no-cache',
+    });
+    const result = await response.json().catch(() => ({}));
+    return { response, result };
 }
 
 function findCharacterIndexByAvatarName(avatarName) {
@@ -608,18 +652,13 @@ async function importDatacatCharacterPayload(payload) {
             : payload.png;
         const png = validateDatacatPngPayload(rawPng);
 
-        const preservedName = buildDatacatPreservedName(metadata);
+        const preservedNameBase = buildDatacatPreservedName(metadata);
         const uploadName = ensurePngExtension(sanitizeImportNamePart(
-            stripPngExtension(metadata.fileName) || preservedName,
-            preservedName,
+            stripPngExtension(metadata.fileName) || preservedNameBase,
+            preservedNameBase,
             96,
         ));
         const file = new File([png], uploadName, { type: 'image/png' });
-        const formData = new FormData();
-        formData.append('avatar', file);
-        formData.append('file_type', 'png');
-        formData.append('preserved_name', preservedName);
-        formData.append('datacat_metadata', JSON.stringify(buildDatacatImportMetadata(metadata)));
 
         postBridgeAck(requestId, 'processing', 'Importing into SillyTavern...', {
             datacatCharacterId: characterId,
@@ -627,15 +666,22 @@ async function importDatacatCharacterPayload(payload) {
             step: 'st-import-png',
             stepLabel: 'Import PNG',
         });
-        const response = await fetch('/api/characters/import', {
-            method: 'POST',
-            headers: getMultipartRequestHeaders(),
-            body: formData,
-            cache: 'no-cache',
+        let preservedName = preservedNameForHost(preservedNameBase);
+        let { response, result } = await postSillyTavernCharacterImport({
+            file,
+            preservedName,
+            metadata,
         });
-        const result = await response.json().catch(() => ({}));
+        if ((!response.ok || result?.error) && isPreservedNameRejection(result)) {
+            preservedName = alternatePreservedName(preservedName);
+            ({ response, result } = await postSillyTavernCharacterImport({
+                file,
+                preservedName,
+                metadata,
+            }));
+        }
         if (!response.ok || result?.error) {
-            throw new Error(result?.message || 'SillyTavern could not import this PNG.');
+            throw new Error(sillyTavernImportErrorMessage(result));
         }
 
         const importedFileName = String(result.file_name || preservedName).trim();
